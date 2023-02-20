@@ -1,70 +1,209 @@
-# Getting Started with Create React App
+## 创建项目
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+~~~cmd
+  create-react-app react-multiple-page-router
+~~~
 
-## Available Scripts
+## 打包环境配置
 
-In the project directory, you can run:
+~~~cmd
+yarn add customize-cra react-app-rewired -D
+~~~
 
-### `npm start`
+修改 `package.json`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+~~~js
+// package.json
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+"scripts": {
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
+},
 
-### `npm test`
+// 更换为
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+"scripts": {
+  "start": "react-app-rewired start",
+  "build": "react-app-rewired build",
+  "test": "react-app-rewired test",
+  "eject": "react-app-rewired eject"
+},
+~~~
 
-### `npm run build`
+添加 config.overrides.js
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+~~~js
+const { override } =  require("customize-cra");
+const overrideConfig = () => (config) => {
+  return config
+}
+module.exports = override(overrideConfig())
+~~~
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 多页面配置
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+在 `src` 目录下新建 `pages` 文件夹用来存放多页面入口
 
-### `npm run eject`
+在 `pages` 目录下新建 `pages1`, `pages2` 目录，并创建入口文件
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+引入 `HtmlWebpackPlugin` 组件
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+~~~cmd
+yarn add html-webpack-plugin -D
+~~~
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+修改 `config.overrides.js` 配置多页面打包
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+~~~js
+const { override } =  require("customize-cra");
+const htmlWebpackPlugin = require("html-webpack-plugin")
+const overrideConfig = () => (config) => {
+  config.entry = {
+    main: "./src/index.js",
+    page1: "./src/pages/page1/index.js",
+    page2: "./src/pages/page2/index.js"
+  }
 
-## Learn More
+  config.output = {
+    filename: "[name].[fullhash].js",
+    path: __dirname + '/dist',
+  }
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  config.plugins.push(
+    new htmlWebpackPlugin({
+      title: "main",
+      template: "./public/index.html",
+      filename: "main.html",
+      chunks: ["main"]
+    }),
+    
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+    new htmlWebpackPlugin({
+      title: "Page1",
+      template: "./public/index.html",
+      filename: "page1.html",
+      chunks: ["page1"]
+    }),
+    
+    new htmlWebpackPlugin({
+      title: "Page2",
+      template: "./public/index.html",
+      filename: "page2.html",
+      chunks: ["page2"]
+    })
+  )
+  return config
+}
+module.exports = override(overrideConfig())
+~~~
 
-### Code Splitting
+## 路由配置
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+引入 `react-router-dom`
 
-### Analyzing the Bundle Size
+~~~cmd
+yarn add react-router-dom -D
+~~~
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+在 `pages1`,`pages2` 页面添加路由组件
 
-### Making a Progressive Web App
+~~~jsx
+// page1/index.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
+import App from './App';
+import reportWebVitals from '../../reportWebVitals';
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
 
-### Advanced Configuration
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+~~~
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+~~~jsx
+// page1/App.jsx
+import './App.css';
+import { Routes, Route, NavLink } from "react-router-dom"
+import Test from '../../components/Test';
 
-### Deployment
+function App() {
+  return (
+    <div className="App">
+      <h1>Page2</h1>
+      <NavLink to={"/test"}>Test</NavLink>
+      <Routes>
+        <Route path="/test" element={<Test />} />
+      </Routes>
+    </div>
+  );
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+export default App;
+~~~
 
-### `npm run build` fails to minify
+~~~jsx
+// page2/index.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
+import App from './App';
+import reportWebVitals from '../../reportWebVitals';
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+~~~
+
+~~~jsx
+// page2/App.jsx
+import './App.css';
+import { Routes, Route, NavLink } from "react-router-dom"
+import About from '../../components/About';
+import Home from '../../components/Home';
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Page2</h1>
+      <NavLink to={"/home"}>Home</NavLink>
+      <NavLink to={"/about"}>About</NavLink>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+~~~
+
+这样就可以切换路由了
+
+## 存在问题
+
+* **路由跳转后，刷新页面后，可能会无法定位到对应的路由**
